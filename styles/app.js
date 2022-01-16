@@ -44,36 +44,41 @@ function updateTemperature(response) {
   let temperature = Math.round(response.data.main.temp);
   document.querySelector("#temperatureToday").innerHTML = temperature;
 }
+
 function updateWeather(response) {
   let humidity = response.data.main.humidity;
+  let wind = Math.round(response.data.wind.speed);
+
   let iconId = response.data.weather[0].icon;
   let weatherDescription = response.data.weather[0].main;
   let city = response.data.name;
 
+  updateTime();
   document.querySelector("#city-heading").innerHTML = city;
   document.querySelector("#weatherDescription").innerHTML = weatherDescription;
   document.querySelector("#humidity").innerHTML = humidity;
+  document.querySelector("#wind").innerHTML = wind;
   document.getElementById(
     "todaysIcon"
   ).src = `http://openweathermap.org/img/wn/${iconId}@2x.png`;
-  updateTemperature(response);
 }
 
-function searchCity(city, units) {
+function getWeatherData(city, units) {
   let apiKey = "3a3fb11a6316d75f69f5016b49163029";
   if (units === undefined) {
     units = "metric";
   }
   let apiUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=${units}`;
-  axios.get(apiUrl).then(updateWeather);
+  let weatherData = axios.get(apiUrl);
+  return weatherData;
 }
 
 function handleSubmit(event) {
   event.preventDefault();
-  changeToCelsius();
   locationClicked = false;
+  changeToCelsius();
   let city = document.querySelector(".form-control").value.trim();
-  searchCity(city);
+  getWeatherData(city).then(updateWeather);
 }
 
 function updateLocation(position) {
@@ -82,12 +87,12 @@ function updateLocation(position) {
   let apiKey = "3a3fb11a6316d75f69f5016b49163029";
   let units = "metric";
   let apiUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${apiKey}&units=${units}`;
+  locationClicked = true;
   changeToCelsius();
   axios.get(apiUrl).then(updateWeather);
 }
 
 function getLocation() {
-  locationClicked = true;
   navigator.geolocation.getCurrentPosition(updateLocation);
 }
 
@@ -106,7 +111,7 @@ function changeToCelsius() {
       city = document.querySelector(".form-control").value.trim();
     }
   }
-  searchCity(city, "metric");
+  getWeatherData(city, "metric").then(updateTemperature);
 }
 
 function changeToFahrenheit() {
@@ -125,13 +130,12 @@ function changeToFahrenheit() {
       city = document.querySelector(".form-control").value.trim();
     }
   }
-
-  searchCity(city, "imperial");
+  getWeatherData(city, "imperial").then(updateTemperature);
 }
 
 let locationClicked = false;
 let isMetric = true;
-searchCity("rotterdam");
+getWeatherData("rotterdam").then(updateWeather);
 adjustDate();
 updateTime();
 
