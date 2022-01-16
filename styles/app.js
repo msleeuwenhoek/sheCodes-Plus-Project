@@ -40,89 +40,55 @@ function updateTime() {
     "#time-update"
   ).innerHTML = `Last updated - ${timeHours}:${timeMinutes}`;
 }
-
 function updateTemperature(response) {
   let temperature = Math.round(response.data.main.temp);
   document.querySelector("#temperatureToday").innerHTML = temperature;
 }
-
-function updateCity(response) {
-  let city = response.data.name;
-  document.querySelector("#city-heading").innerHTML = city;
-}
-
-function updateWeatherDescription(response) {
-  let weather = response.data.weather[0].main;
-  document.querySelector("#weatherDescription").innerHTML = weather;
-}
-
-function updateHumidity(response) {
+function updateWeather(response) {
   let humidity = response.data.main.humidity;
-  document.querySelector("#humidity").innerHTML = humidity;
-}
-
-function updateWeatherIcon(response) {
   let iconId = response.data.weather[0].icon;
+  let weatherDescription = response.data.weather[0].main;
+  let city = response.data.name;
+
+  document.querySelector("#city-heading").innerHTML = city;
+  document.querySelector("#weatherDescription").innerHTML = weatherDescription;
+  document.querySelector("#humidity").innerHTML = humidity;
   document.getElementById(
     "todaysIcon"
   ).src = `http://openweathermap.org/img/wn/${iconId}@2x.png`;
+  updateTemperature(response);
 }
 
-function updateWeather(response) {
-  let weatherData = response;
-  updateTemperature(weatherData);
-  updateCity(weatherData);
-  updateWeatherDescription(weatherData);
-  updateHumidity(weatherData);
-  updateWeatherIcon(weatherData);
-}
-
-function capitalize(string) {
-  let stringTrimmed = string.toLowerCase().trim();
-  let stringElements = stringTrimmed.split(" ");
-  for (let i = 0; i < stringElements.length; i++) {
-    stringElements[i] =
-      stringElements[i].charAt(0).toUpperCase() + stringElements[i].slice(1);
-  }
-  let capitalizedString = stringElements.join(" ");
-  return capitalizedString;
-}
-
-function searchCity(event) {
-  event.preventDefault();
-  locationClicked = false;
-  changeToCelsius();
-
-  let city = document.querySelector(".form-control").value;
-
-  let cityCapitalized = capitalize(city);
+function searchCity(city, units) {
   let apiKey = "3a3fb11a6316d75f69f5016b49163029";
-  let units = "metric";
-  let apiUrl = `https://api.openweathermap.org/data/2.5/weather?q=${cityCapitalized}&appid=${apiKey}&units=${units}`;
+  if (units === undefined) {
+    units = "metric";
+  }
+  let apiUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=${units}`;
   axios.get(apiUrl).then(updateWeather);
 }
 
-function updateLocation(position) {
+function handleSubmit(event) {
+  event.preventDefault();
   changeToCelsius();
+  locationClicked = false;
+  let city = document.querySelector(".form-control").value.trim();
+  searchCity(city);
+}
+
+function updateLocation(position) {
   let latitude = position.coords.latitude;
   let longitude = position.coords.longitude;
   let apiKey = "3a3fb11a6316d75f69f5016b49163029";
   let units = "metric";
   let apiUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${apiKey}&units=${units}`;
+  changeToCelsius();
   axios.get(apiUrl).then(updateWeather);
 }
 
 function getLocation() {
   locationClicked = true;
   navigator.geolocation.getCurrentPosition(updateLocation);
-}
-
-function changeToRotterdam() {
-  let city = "Rotterdam";
-  let apiKey = "3a3fb11a6316d75f69f5016b49163029";
-  let units = "metric";
-  let apiUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=${units}`;
-  axios.get(apiUrl).then(updateWeather);
 }
 
 function changeToCelsius() {
@@ -132,21 +98,15 @@ function changeToCelsius() {
   rightUnit.innerHTML = "°F";
   let leftUnit = document.querySelector("#left-unit");
   leftUnit.innerHTML = "°C";
-
   let city = "Rotterdam";
   if (locationClicked) {
     city = document.querySelector("#city-heading").textContent;
   } else {
     if (document.querySelector(".form-control").value !== "") {
-      city = document.querySelector(".form-control").value;
+      city = document.querySelector(".form-control").value.trim();
     }
   }
-
-  let apiKey = "3a3fb11a6316d75f69f5016b49163029";
-  let units = "metric";
-  let apiUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=${units}`;
-
-  axios.get(apiUrl).then(updateTemperature);
+  searchCity(city, "metric");
 }
 
 function changeToFahrenheit() {
@@ -162,25 +122,21 @@ function changeToFahrenheit() {
     city = document.querySelector("#city-heading").textContent;
   } else {
     if (document.querySelector(".form-control").value !== "") {
-      city = document.querySelector(".form-control").value;
+      city = document.querySelector(".form-control").value.trim();
     }
   }
 
-  let apiKey = "3a3fb11a6316d75f69f5016b49163029";
-  let units = "imperial";
-  let apiUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=${units}`;
-
-  axios.get(apiUrl).then(updateTemperature);
+  searchCity(city, "imperial");
 }
+
 let locationClicked = false;
 let isMetric = true;
-changeToRotterdam();
-changeToCelsius();
+searchCity("rotterdam");
 adjustDate();
 updateTime();
 
 let searchForm = document.querySelector("#search-section");
-searchForm.addEventListener("submit", searchCity);
+searchForm.addEventListener("submit", handleSubmit);
 
 let locationButton = document.querySelector(".locationButton");
 locationButton.addEventListener("click", getLocation);
